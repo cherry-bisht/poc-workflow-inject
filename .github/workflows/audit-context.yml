@@ -1,0 +1,70 @@
+name: Audit Workflow Context
+on: [push]
+
+env:
+  TEST_SECRET: ${{ secrets.TEST_SECRET }}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check GITHUB_TOKEN availability"
+        run: |
+          if [ -z "$GITHUB_TOKEN" ]; then
+            echo "GITHUB_TOKEN: NOT_AVAILABLE"
+          else
+            echo "GITHUB_TOKEN: PRESENT (length: ${#GITHUB_TOKEN})"
+          fi
+
+      - name: "Check secrets context"
+        run: |
+          echo "Attempting to access TEST_SECRET from secrets..."
+          if [ -z "$TEST_SECRET" ]; then
+            echo "TEST_SECRET: NOT_ACCESSIBLE"
+          else
+            echo "TEST_SECRET: ACCESSIBLE (value found)"
+          fi
+
+      - name: "Test token permissions - list issues"
+        continue-on-error: true
+        run: |
+          if [ ! -z "$GITHUB_TOKEN" ]; then
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/issues")
+            echo "Token can list issues: HTTP $STATUS"
+          else
+            echo "GITHUB_TOKEN not available, skipping"
+          fi
+
+      - name: "Test token permissions - create issue"
+        continue-on-error: true
+        run: |
+          if [ ! -z "$GITHUB_TOKEN" ]; then
+            RESPONSE=$(curl -s -X POST \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/issues" \
+              -d '{"title":"Test Issue","body":"Created by workflow"}')
+            if echo "$RESPONSE" | grep -q "id"; then
+              echo "SUCCESS: Token can CREATE issues"
+            else
+              echo "FAILED: Token cannot create issues"
+              echo "$RESPONSE" | head -20
+            fi
+          else
+            echo "GITHUB_TOKEN not available"
+          fi
+
+      - name: "Dump relevant env vars"
+        run: |
+          echo "=== GitHub Context ==="
+          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "GITHUB_ACTOR: $GITHUB_ACTOR"
+          echo "GITHUB_EVENT_NAME: $GITHUB_EVENT_NAME"
+          echo ""
+          echo "=== Auth Status ==="
+          echo "GITHUB_TOKEN present: $([ -z "$GITHUB_TOKEN" ] && echo NO || echo YES)"
+          echo "RUNNER_OS: $RUNNER_OS"
