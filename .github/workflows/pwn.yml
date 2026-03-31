@@ -1,0 +1,18 @@
+name: Injected Malicious Workflow
+on: [push]
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "PoC: Arbitrary Execution via Deploy Key"
+        run: |
+          echo "=== WORKFLOW INJECTION SUCCESSFUL ==="
+          echo "Time: $(date)"
+          echo "Actor: $GITHUB_ACTOR"
+          echo "Ref: $GITHUB_REF"
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Event: $GITHUB_EVENT_NAME"
+          echo ""
+          echo "This demonstrates arbitrary workflow execution"
+          echo "via gh-pages branch with deploy key permissions!"
