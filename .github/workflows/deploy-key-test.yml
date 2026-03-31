@@ -1,0 +1,17 @@
+name: Deploy Key Test
+on: [push]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Marker: This workflow was triggered by deploy key push"
+        run: echo "Deploy key test running..."
+      
+      - name: "Check GITHUB_TOKEN"
+        run: |
+          if [ -z "$GITHUB_TOKEN" ]; then
+            echo "GITHUB_TOKEN: NOT_PRESENT"
+          else
+            echo "GITHUB_TOKEN: PRESENT (length: ${#GITHUB_TOKEN})"
+          fi
